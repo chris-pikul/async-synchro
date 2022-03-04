@@ -8,13 +8,11 @@
  * NPM: https://npmjs.com/package/async-synchro
  * GITHUB: https://github.com/chris-pikul/async-synchro
  */
+/**
+ * Function which when called releases the lock it originated from
+ */
 export declare type Releaser = () => void;
-export declare type Canceller = () => void;
-export declare type LockTicket = [Releaser, number?];
-export declare type LockResolver = (ticket: LockTicket) => void;
+/**
+ * Type for the promise rejectors
+ */
 export declare type LockRejector = (err: Error) => void;
-export declare type LockCB<T> = (locks?: number) => (Promise<T> | T);
-export interface QueuedPromise {
-    resolve: LockResolver;
-    reject: LockRejector;
-}

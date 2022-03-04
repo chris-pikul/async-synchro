@@ -9,7 +9,10 @@
  * GITHUB: https://github.com/chris-pikul/async-synchro
  */
 import { SynchroError } from './errors';
-import type { LockCB, LockTicket } from './types';
+import type { Releaser } from './types';
+export declare type SemaphoreTicket = [Releaser, number];
+export declare type SemaphoreResolver = (ticket: SemaphoreTicket) => void;
+export declare type SemaphoreLockCB<T> = (locks?: number) => (Promise<T> | T);
 /**
  * Options available for Semaphore objects
  */
@@ -115,7 +118,7 @@ export default class Semaphore {
      * @returns Promise resolving to a tuple composed of the releaser function,
      * and the number of available slots on this Semaphore
      */
-    acquire(): Promise<LockTicket>;
+    acquire(): Promise<SemaphoreTicket>;
     /**
      * Performs a lock acquisition on this semaphore that is automatically guarded
      * to ensure proper release after the provided callback is executed.
@@ -163,7 +166,7 @@ export default class Semaphore {
      * available slots.
      * @returns Promise resolving to the results of the callback function
      */
-    guard<T>(cb: LockCB<T>): Promise<T>;
+    guard<T>(cb: SemaphoreLockCB<T>): Promise<T>;
     /**
      * Cancels all queued locks by rejecting their promises.
      *
