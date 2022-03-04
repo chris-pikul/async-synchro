@@ -20,3 +20,5 @@ export class SynchroError extends Error {
     this.name = 'SynchroError';
   }
 };
+
+export const ErrCancelled = new SynchroError('lock cancelled');

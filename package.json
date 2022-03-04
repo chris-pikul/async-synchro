@@ -4,18 +4,21 @@
   "description": "Synchronization for concurrency. Allows for mutex, semaphores, read-write locks, timed locks, and more.",
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    "import": "./lib/esm/index.js",
+    "require": "./lib/cjs/index.js"
+  },
   "files": [
     "lib/"
   ],
   "scripts": {
+    "clean": "rimraf lib/**/*",
     "lint": "npx eslint ./src/** --ext .js,.ts",
-
     "compile": "npm run compile:lib && npm run compile:node",
     "compile:lib": "tsc -p tsconfig.lib.json",
     "compile:node": "tsc -p tsconfig.node.json",
-    
-    "build": "npm run lint && npm run compile",
-
+    "build": "npm run lint && npm run clean && npm run compile",
     "prepublishOnly": "npm run build"
   },
   "repository": {
@@ -40,6 +43,7 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.13.0",
+    "rimraf": "^3.0.2",
     "typescript": "^4.6.2"
   }
 }

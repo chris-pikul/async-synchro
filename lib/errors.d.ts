@@ -15,3 +15,4 @@
 export declare class SynchroError extends Error {
     constructor(message?: string);
 }
+export declare const ErrCancelled: SynchroError;

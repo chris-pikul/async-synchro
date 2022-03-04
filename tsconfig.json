@@ -8,7 +8,9 @@
     "sourceMap": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
+
     "declaration": true,
+    "declarationDir": "lib",
 
     "rootDir": "src",
     "outDir": "lib"
