@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "target": "ES2017",
+
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+
+    "rootDir": "src",
+    "outDir": "lib"
+  },
+
+  "lib": [ "ES2021" ],
+
+  "include": [ "src/**/*" ],
+  "exclude": [ "node_modules" ]
+}
