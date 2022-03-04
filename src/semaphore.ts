@@ -12,12 +12,20 @@
 import { ErrCancelled, SynchroError } from './errors';
 
 import type {
-  LockCB,
+  Releaser,
   LockRejector,
-  LockResolver,
-  LockTicket,
-  QueuedPromise,
 } from './types';
+
+export type SemaphoreTicket = [ Releaser, number ];
+
+export type SemaphoreResolver = (ticket:SemaphoreTicket) => void;
+
+export type SemaphoreLockCB<T> = (locks?:number) => (Promise<T> | T);
+
+interface QueuedPromise {
+  resolve:SemaphoreResolver;
+  reject:LockRejector;
+};
 
 /**
  * Options available for Semaphore objects
@@ -98,6 +106,7 @@ export default class Semaphore {
     // Bind methods
     this.acquire = this.acquire.bind(this);
     this.guard = this.guard.bind(this);
+    this.cancelAll = this.cancelAll.bind(this);
 
     // Ensure the maxConcurrent is a number at least 1 if provided
     if(maxConcurrent) {
@@ -185,20 +194,20 @@ export default class Semaphore {
    * @returns Promise resolving to a tuple composed of the releaser function,
    * and the number of available slots on this Semaphore
    */
-  acquire():Promise<LockTicket> {
+  acquire():Promise<SemaphoreTicket> {
     // Cache the lock status since the promise resolution might change it
     const wasLocked = this.isLocked;
 
     // Construct the returning promise
-    const prom = new Promise<LockTicket>(this.#enque);
-
-    // If there was no lock, start dispatching the queue
-    if(!wasLocked)
-      this.#dispatch();
+    const prom = new Promise<SemaphoreTicket>(this.#enque);
 
     // If we wanted to listen, fire of an event
     if(this.#options.onAquire)
       this.#options.onAquire();
+
+    // If there was no lock, start dispatching the queue
+    if(!wasLocked)
+      this.#dispatch();
 
     return prom;
   }
@@ -250,7 +259,7 @@ export default class Semaphore {
    * available slots.
    * @returns Promise resolving to the results of the callback function
    */
-  async guard<T>(cb:LockCB<T>):Promise<T> {
+  async guard<T>(cb:SemaphoreLockCB<T>):Promise<T> {
     const [ release, avail ] = await this.acquire();
 
     let value:T;
@@ -279,11 +288,13 @@ export default class Semaphore {
     this.#allowed = this.#maxConcurrent;
   }
 
-  #enque(resolve:LockResolver, reject:LockRejector):void {
+  #enque(resolve:SemaphoreResolver, reject:LockRejector):void {
     this.#queue.push({
       resolve,
       reject,
     });
+
+    this.#allowed--;
   }
 
   #dispatch():void {
@@ -314,7 +325,7 @@ export default class Semaphore {
     };
 
     // Construct the ticket tuple
-    const ticket:LockTicket = [ releaser, this.#maxConcurrent - this.#allowed ];
+    const ticket:SemaphoreTicket = [ releaser, this.#allowed ];
 
     // Resolve the waiting promise
     next.resolve(ticket);
