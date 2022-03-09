@@ -69,7 +69,7 @@ export default class Semaphore {
   /**
    * Options dictating how this semaphore will work
    */
-  #options:SemaphoreOptions;
+  options:SemaphoreOptions;
 
   /**
    * Numerical value determining how many further locks are allowed.
@@ -118,7 +118,7 @@ export default class Semaphore {
     }
 
     // Assign the options by overloading the defaults with a spread
-    this.#options = {
+    this.options = {
       ...Semaphore.DefaultOptions,
       ...(options ?? {}),
     };
@@ -201,8 +201,8 @@ export default class Semaphore {
     const prom = new Promise<SemaphoreTicket>((res, rej) => this.#enque(res, rej));
 
     // If we wanted to listen, fire of an event
-    if(typeof this.#options.onAquire === 'function')
-      this.#options.onAquire();
+    if(typeof this.options.onAquire === 'function')
+      this.options.onAquire();
 
     // If there was no lock, start dispatching the queue
     if(!wasLocked)
@@ -280,15 +280,15 @@ export default class Semaphore {
    */
   cancelAll():void {
     // Reject each of the waiting promises in the queue and empty it
-    this.#queue.forEach(({ reject }) => reject(this.#options.errorCancelled ?? ErrCancelled));
+    this.#queue.forEach(({ reject }) => reject(this.options.errorCancelled ?? ErrCancelled));
     this.#queue = [];
 
     // Reset the allowed value for better concurrent
     this.#allowed = this.#maxConcurrent;
 
     // Call the onCancel asked for
-    if(typeof this.#options.onCancel === 'function')
-      this.#options.onCancel();
+    if(typeof this.options.onCancel === 'function')
+      this.options.onCancel();
   }
 
   #enque(resolve:SemaphoreResolver, reject:LockRejector):void {
@@ -320,8 +320,8 @@ export default class Semaphore {
       this.#allowed++;
 
       // If we wanted to listen, fire of the event
-      if(typeof this.#options.onRelease === 'function')
-        this.#options.onRelease();
+      if(typeof this.options.onRelease === 'function')
+        this.options.onRelease();
 
       // Recursivly dispatch the next lock
       this.#dispatch();
