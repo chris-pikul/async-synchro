@@ -14,6 +14,7 @@ import SynchroError, { ErrCancelled } from './errors';
 import type {
   Releaser,
   LockRejector,
+  QueuedPromise,
 } from './types';
 
 export type SemaphoreTicket = [ Releaser, number ];
@@ -22,10 +23,7 @@ export type SemaphoreResolver = (ticket:SemaphoreTicket) => void;
 
 export type SemaphoreLockCB<T> = (locks?:number) => (Promise<T> | T);
 
-interface QueuedPromise {
-  resolve:SemaphoreResolver;
-  reject:LockRejector;
-};
+export type SemaphoreQueuedPromise = QueuedPromise<SemaphoreResolver>;
 
 /**
  * Options available for Semaphore objects
@@ -86,7 +84,7 @@ export default class Semaphore {
   /**
    * List of locks aquired on this Semaphore.
    */
-  #queue:Array<QueuedPromise> = [];
+  #queue:Array<SemaphoreQueuedPromise> = [];
 
   /**
    * @param maxConcurrent Positive integer of the maximum number of concurrent
@@ -297,14 +295,14 @@ export default class Semaphore {
     this.#queue.push({
       resolve,
       reject,
-    });
+    } as SemaphoreQueuedPromise);
 
     this.#allowed--;
   }
 
   #dispatch():void {
     // Grab the first enqueued entry in the line, or short-circuit if none
-    const next:(QueuedPromise|undefined) = this.#queue.shift();
+    const next:(SemaphoreQueuedPromise|undefined) = this.#queue.shift();
     if(!next)
       return;
 
