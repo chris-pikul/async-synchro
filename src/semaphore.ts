@@ -109,14 +109,14 @@ export default class Semaphore {
     this.cancelAll = this.cancelAll.bind(this);
 
     // Ensure the maxConcurrent is a number at least 1 if provided
-    if(maxConcurrent) {
+    if(typeof maxConcurrent === 'undefined' || maxConcurrent == null) {
+      this.#maxConcurrent = 1;
+    } else {
       if(typeof maxConcurrent !== 'number')
         throw new TypeError(`Semaphore was constructed with a maxConcurrent of type "${typeof maxConcurrent}", a positive number is required`);
       else if(maxConcurrent <= 0)
         throw new TypeError(`Semaphore was constructed with a maxConcurrent value below 1 "${maxConcurrent}", only positive values are supported`);
       this.#maxConcurrent = Math.trunc(maxConcurrent);
-    } else {
-      this.#maxConcurrent = 1;
     }
 
     // Assign the options by overloading the defaults with a spread
@@ -199,10 +199,11 @@ export default class Semaphore {
     const wasLocked = this.isLocked;
 
     // Construct the returning promise
-    const prom = new Promise<SemaphoreTicket>(this.#enque);
+    // eslint-disable-next-line no-promise-executor-return
+    const prom = new Promise<SemaphoreTicket>((res, rej) => this.#enque(res, rej));
 
     // If we wanted to listen, fire of an event
-    if(this.#options.onAquire)
+    if(typeof this.#options.onAquire === 'function')
       this.#options.onAquire();
 
     // If there was no lock, start dispatching the queue
@@ -259,7 +260,7 @@ export default class Semaphore {
    * available slots.
    * @returns Promise resolving to the results of the callback function
    */
-  async guard<T>(cb:SemaphoreLockCB<T>):Promise<T> {
+  async guard<T = any>(cb:SemaphoreLockCB<T>):Promise<T> {
     const [ release, avail ] = await this.acquire();
 
     let value:T;
@@ -286,6 +287,10 @@ export default class Semaphore {
 
     // Reset the allowed value for better concurrent
     this.#allowed = this.#maxConcurrent;
+
+    // Call the onCancel asked for
+    if(typeof this.#options.onCancel === 'function')
+      this.#options.onCancel();
   }
 
   #enque(resolve:SemaphoreResolver, reject:LockRejector):void {
@@ -317,7 +322,7 @@ export default class Semaphore {
       this.#allowed++;
 
       // If we wanted to listen, fire of the event
-      if(this.#options.onRelease)
+      if(typeof this.#options.onRelease === 'function')
         this.#options.onRelease();
 
       // Recursivly dispatch the next lock
