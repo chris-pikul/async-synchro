@@ -1,0 +1,7 @@
+{
+  "all": true,
+  "check-coverage": false,
+  "include": [ "src/**/*.ts" ],
+  "excludeNodeModules": true,
+  "reporter": [ "lcov" ]
+}
