@@ -9,7 +9,7 @@
  * GITHUB: https://github.com/chris-pikul/async-synchro
  */
 
-import { ErrCancelled, SynchroError } from './errors';
+import SynchroError, { ErrCancelled } from './errors';
 
 import type {
   Releaser,
