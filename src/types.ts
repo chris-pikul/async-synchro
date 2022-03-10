@@ -17,7 +17,7 @@ export type Releaser = () => void;
 /**
  * Type for the promise resolvers
  */
-export type LockResolver = () => void;
+export type LockResolver = (release:Releaser) => void;
 
 /**
  * Type for the promise rejectors
