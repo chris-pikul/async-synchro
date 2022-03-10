@@ -17,8 +17,12 @@ export {
   SemaphoreLockCB,
 } from './semaphore';
 
-export { default as Mutex } from './mutex';
+export {
+  default as Mutex,
+  MutexOptions,
+  MutexLockCB,
+} from './mutex';
 
 export * from './errors';
 
-export type { Releaser, LockRejector } from './types';
+export type { Releaser } from './types';

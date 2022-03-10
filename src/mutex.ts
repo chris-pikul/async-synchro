@@ -10,16 +10,21 @@
  */
 
 import SynchroError, { ErrCancelled } from './errors';
-import { LockRejector, LockResolver, QueuedPromise, Releaser } from './types';
+import {
+  LockRejector,
+  LockResolver,
+  QueuedPromise,
+  Releaser,
+} from './types';
 
 export type MutexLockCB<T> = () => (Promise<T> | T);
 
 export interface MutexOptions {
 
   /**
-   * Callback executed whenever an aquisition is made.
+   * Callback executed whenever a lock is achieved.
    */
-  onAquire ?: () => void;
+  onLock ?: () => void;
   
   /**
    * Callback executed whenever a lock is released.
@@ -39,12 +44,6 @@ export interface MutexOptions {
 
 export default class Mutex {
   /**
-   * Readonly set of default options that will be used when constructing a new
-   * Semaphore object.
-   */
-  public static readonly DefaultOptions:MutexOptions = { errorCancelled: ErrCancelled };
-
-  /**
    * Options dictating how this mutex will work
    */
   options:MutexOptions;
@@ -62,12 +61,11 @@ export default class Mutex {
   constructor(options?:MutexOptions) {
     // Bind methods
     this.lock = this.lock.bind(this);
+    this.guard = this.guard.bind(this);
+    this.cancelAll = this.cancelAll.bind(this);
 
     // Assign the options by overloading the defaults with a spread
-    this.options = {
-      ...Mutex.DefaultOptions,
-      ...(options ?? {}),
-    };
+    this.options = { ...(options ?? {}) };
 
     // Ensure we are unlocked at the beginning
     this.#locked = false;
@@ -82,22 +80,51 @@ export default class Mutex {
   }
 
   lock():Promise<Releaser> {
-    if(this.#locked) {
-      // Construct the returning promise
-      // eslint-disable-next-line no-promise-executor-return
-      return new Promise<Releaser>((res, rej) => this.#enque(res, rej));
+    const wasLocked = this.isLocked;
+
+    // eslint-disable-next-line no-promise-executor-return
+    const prom = new Promise<Releaser>((res, rej) => this.#enque(res, rej));
+
+    if(!wasLocked) {
+      // If we wanted to listen, fire off an event
+      if(typeof this.options.onLock === 'function')
+        this.options.onLock();
+
+      this.#deque();
     }
 
-    this.#locked = true;
+    return prom;
+  }
 
-    // If we wanted to listen, fire off an event
-    if(typeof this.options.onAquire === 'function')
-      this.options.onAquire();
+  async guard<T = any>(cb:MutexLockCB<T>):Promise<T> {
+    const release = await this.lock();
 
-    return Promise.resolve(this.#makeReleaser());
+    let value:T;
+    try {
+      value = await cb();
+    } finally {
+      release();
+    }
+
+    return value;
+  }
+
+  cancelAll(err?:Error):void {
+    // Reject all of the waiting promises and empty the queue
+    this.#queue.forEach(({ reject }) => reject(err ?? this.options.errorCancelled ?? ErrCancelled));
+    this.#queue = [];
+
+    // Unlock the mutex
+    this.#locked = false;
+
+    // Fire the event is asked for
+    if(typeof this.options.onCancel === 'function')
+      this.options.onCancel();
   }
 
   #enque(resolve:LockResolver, reject:LockRejector):void {
+    this.#locked = true;
+
     this.#queue.push({
       resolve,
       reject,
@@ -109,6 +136,10 @@ export default class Mutex {
     const next:(QueuedPromise|undefined) = this.#queue.shift();
     if(!next)
       return;
+
+    // If we wanted to listen, fire off an event
+    if(typeof this.options.onLock === 'function')
+      this.options.onLock();
 
     // Resolve the promise to pass through the releaser
     next.resolve(this.#makeReleaser());
@@ -123,15 +154,15 @@ export default class Mutex {
         return;
       released = true;
 
+      // Fire off the event if we are listening
+      if(typeof this.options.onRelease === 'function')
+        this.options.onRelease();
+
       // If there is queued promises, let them process. Otherwise unlock
       if(this.#queue.length > 0)
         this.#deque();
       else
         this.#locked = false;
-      
-      // Fire off the event if we are listening
-      if(typeof this.options.onRelease === 'function')
-        this.options.onRelease();
     };
   }
 }
