@@ -12,7 +12,7 @@
  * Wraps the default Error type into a new object SynchroError allowing for
  * additional information and type-checking during error handling.
  */
-export declare class SynchroError extends Error {
+export default class SynchroError extends Error {
     constructor(message?: string);
 }
 export declare const ErrCancelled: SynchroError;

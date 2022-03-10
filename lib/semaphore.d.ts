@@ -8,11 +8,12 @@
  * NPM: https://npmjs.com/package/async-synchro
  * GITHUB: https://github.com/chris-pikul/async-synchro
  */
-import { SynchroError } from './errors';
-import type { Releaser } from './types';
+import SynchroError from './errors';
+import type { Releaser, QueuedPromise } from './types';
 export declare type SemaphoreTicket = [Releaser, number];
 export declare type SemaphoreResolver = (ticket: SemaphoreTicket) => void;
 export declare type SemaphoreLockCB<T> = (locks?: number) => (Promise<T> | T);
+export declare type SemaphoreQueuedPromise = QueuedPromise<SemaphoreResolver>;
 /**
  * Options available for Semaphore objects
  */
@@ -44,6 +45,10 @@ export default class Semaphore {
      * Semaphore object.
      */
     static readonly DefaultOptions: SemaphoreOptions;
+    /**
+     * Options dictating how this semaphore will work
+     */
+    options: SemaphoreOptions;
     /**
      * @param maxConcurrent Positive integer of the maximum number of concurrent
      * users of this Semaphore. **Default = 1**.
@@ -166,7 +171,7 @@ export default class Semaphore {
      * available slots.
      * @returns Promise resolving to the results of the callback function
      */
-    guard<T>(cb: SemaphoreLockCB<T>): Promise<T>;
+    guard<T = any>(cb: SemaphoreLockCB<T>): Promise<T>;
     /**
      * Cancels all queued locks by rejecting their promises.
      *

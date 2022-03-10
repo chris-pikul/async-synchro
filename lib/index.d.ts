@@ -9,5 +9,6 @@
  * GITHUB: https://github.com/chris-pikul/async-synchro
  */
 export { default as Semaphore, SemaphoreOptions, SemaphoreTicket, SemaphoreResolver, SemaphoreLockCB, } from './semaphore';
+export { default as Mutex, MutexOptions, MutexLockCB, } from './mutex';
 export * from './errors';
-export type { Releaser, LockRejector } from './types';
+export type { Releaser } from './types';

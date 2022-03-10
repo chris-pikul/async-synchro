@@ -13,6 +13,17 @@
  */
 export declare type Releaser = () => void;
 /**
+ * Type for the promise resolvers
+ */
+export declare type LockResolver = (release: Releaser) => void;
+/**
  * Type for the promise rejectors
  */
 export declare type LockRejector = (err: Error) => void;
+/**
+ * Extendable object mapping the resolver/rejector pair from promises
+ */
+export interface QueuedPromise<Resolver = LockResolver, Rejector = LockRejector> {
+    resolve: Resolver;
+    reject: Rejector;
+}
