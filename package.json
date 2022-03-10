@@ -1,6 +1,6 @@
 {
   "name": "async-synchro",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Synchronization for concurrency. Allows for mutex, semaphores, read-write locks, timed locks, and more.",
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.js",
