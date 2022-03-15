@@ -5,6 +5,23 @@ Synchronization for concurrency. Allows for mutex, semaphores, read-write locks,
 **WORK IN PROGRESS**
 This readme reflects what is currently implemented
 
+## Table of Contents
+
+* [Installation](#installation)
+* [Usage](#usage)
+  * [Semaphore](#semaphore---multi-user-locks)
+    * [Example - Automatic with Async/Await](#semaphore-example---automatically-lockrelease-with-asyncawait)
+    * [Example - Automatic with Promises](#semaphore-example---automatically-lockrelease-with-promises)
+    * [Example - Manual with Async/Await](#semaphore-example---manually-acquiring-lock-with-asyncawait)
+    * [Example - Manual with Promises](#semaphore-example---manually-acquiring-lock-with-promises)
+  * [Mutex](#mutex---single-user-locks)
+    * [Example - Automatic with Async/Await](#mutex-example---automatically-lockrelease-with-asyncawait)
+    * [Example - Automatic with Promises](#mutex-example---automatically-lockrelease-with-promises)
+    * [Example - Manual with Async/Await](#mutex-example---manually-acquiring-lock-with-asyncawait)
+    * [Example - Manual with Promises](#mutex-example---manually-acquiring-lock-with-promises)
+* [Motivation](#motivation)
+* [License](#license)
+
 ## Installation
 
 Standard NPM package allowing for CommonJS/ESM import styles.
@@ -16,7 +33,8 @@ yarn add async-synchro
 
 ## Usage
 
-Each type follows a similar pattern, the verbage may be slightly different between whichever class you use. I prefer the Async/Await flavor of usage personally, but if you prefer Promises examples are available for those as well.
+Each type follows a similar pattern, the verbage may be slightly different between whichever class you use. I prefer the Async/Await flavor of usage personally, but if you prefer Promises examples are available for those as well. Be aware that there are manual locking/aquisition methods for more granular control, and there are automatic "guards" that will perform the lock/aquisition and releasing for you. The automatic approach is much safer and is suggested as the default
+usage.
 
 The doc-comments on each type are extensive and will provide you with examples as well if you have auto-complete/intellisense.
 
@@ -28,7 +46,7 @@ There are two ways to acquire a lock. The first and highly suggested way is with
 
 If you prefer the manual lock/release pattern of `acquire()` then be-aware that you **must call the release function**. Bad things will happen if you don't.
 
-#### Automatically lock/release with Async/Await
+#### Semaphore Example - Automatically lock/release with Async/Await
 
 ```TypeScript
 // Create semaphore with up to 5 concurrent users
@@ -49,7 +67,7 @@ try {
 }
 ```
 
-#### Automatically lock/release with Promises
+#### Semaphore Example - Automatically lock/release with Promises
 
 ```TypeScript
 // Create semaphore with up to 5 concurrent users
@@ -73,7 +91,7 @@ sem.guard<number>()
   });
 ```
 
-#### Manually acquiring lock with Async/Await
+#### Semaphore Example - Manually acquiring lock with Async/Await
 
 ```JS
 // Create semaphore with up to 5 concurrent users
@@ -96,7 +114,7 @@ try {
 }
 ```
 
-#### Manually acquiring lock with Promises
+#### Semaphore Example - Manually acquiring lock with Promises
 
 ```JS
 // Create semaphore with up to 5 concurrent users
@@ -113,6 +131,101 @@ sem.acquire()
   })
   .catch(err => {
     // Most likely, the Semaphore was cancelled and the
+    // locks where errored out.
+    console.error(err.message);
+  })
+```
+
+### Mutex - Single-user locks
+
+Mutex's allow for a single user to lock the resource. Any further attempts to lock the mutex will be blocked until the initial lock is released.
+
+These Mutex's operate much like a [`Semaphore`](#semaphore---multi-user-locks) with a maximum concurrent users of 1 (which is it's default constructor). The major difference is the verbage has changed to reflect the single-user style that Mutexs offer. Instead of `acquire` for locking, the verbage is `lock`.
+
+#### Mutex Example - Automatically lock/release with Async/Await
+
+```TypeScript
+// Create Mutex
+const mtx = new Mutex();
+
+try {
+  const results = await mtx.guard<number>(() => {
+    // At this point the lock is acquired and work can be performed
+    ...
+
+    // You can return a value if you wish, which will be passed through.
+    return 42;
+  });
+} catch(err) {
+  // Most likely, the Mutex was cancelled and the
+  // locks where errored out.
+  console.error(err.message);
+}
+```
+
+#### Mutex Example - Automatically lock/release with Promises
+
+```TypeScript
+// Create Mutex
+const mtx = new Mutex();
+
+mtx.guard<number>()
+  .then(() => {
+    // At this point the lock is acquired and work can be performed
+    ...
+
+    // You can return a value if you wish, which will be passed through.
+    return 42;
+  })
+  .then(results => {
+    console.log(results); // 42
+  })
+  .catch(err => {
+    // Most likely, the Mutex was cancelled and the
+    // locks where errored out.
+    console.error(err.message);
+  });
+```
+
+#### Mutex Example - Manually acquiring lock with Async/Await
+
+```JS
+// Create Mutex
+const mtx = new Mutex();
+
+try {
+  // "release" is the releaser that unlocks or releases this lock.
+  const release = await mtx.lock();
+
+  // At this point the lock is acquired and work can be performed
+  ...
+
+  // You must ALWAYS call the releaser when using acquire()!
+  release();
+} catch(err) {
+  // Most likely, the Mutex was cancelled and the
+  // locks where errored out.
+  console.error(err.message);
+}
+```
+
+#### Mutex Example - Manually acquiring lock with Promises
+
+```JS
+// Create Mutex
+const mtx = new Mutex();
+
+// Try to acquire the lock, or wait until available
+mtx.lock()
+  .then(release => {
+    // At this point the lock is acquired and work can be performed
+    ...
+
+    // You must ALWAYS call the releaser when using acquire()!
+    release();
+  })
+  .catch(err => {
+    // Most likely, the Mutex was cancelled and the
     // locks where errored out.
     console.error(err.message);
   })
