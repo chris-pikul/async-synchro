@@ -200,7 +200,7 @@ try {
   // At this point the lock is acquired and work can be performed
   ...
 
-  // You must ALWAYS call the releaser when using acquire()!
+  // You must ALWAYS call the releaser when using lock()!
   release();
 } catch(err) {
   // Most likely, the Mutex was cancelled and the
@@ -221,7 +221,7 @@ mtx.lock()
     // At this point the lock is acquired and work can be performed
     ...
 
-    // You must ALWAYS call the releaser when using acquire()!
+    // You must ALWAYS call the releaser when using lock()!
     release();
   })
   .catch(err => {
